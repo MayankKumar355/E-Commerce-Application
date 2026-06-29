@@ -1,5 +1,4 @@
 
-import 'package:shopping_store/utils/helpers/network_manager.dart';
 
 class HkValidator {
   /// Empty Text Validation

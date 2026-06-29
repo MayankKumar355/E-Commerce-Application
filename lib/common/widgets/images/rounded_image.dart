@@ -12,7 +12,7 @@ class HkRoundedImage extends StatelessWidget {
     this.applyImageRadius = true,
     this.border,
     this.backgroundColor,
-    this.fit = BoxFit.contain,
+    this.fit = BoxFit.cover,
     this.padding,
     this.isNetworkImage = false,
     this.onPressed,
@@ -35,25 +35,31 @@ class HkRoundedImage extends StatelessWidget {
     return GestureDetector(
       onTap: onPressed,
       child: Container(
-        width: width,
-        height: height,
+        width: width ?? double.infinity,
+        height: height ?? double.infinity,
         padding: padding,
-        decoration: BoxDecoration(border: border, color: backgroundColor, borderRadius: BorderRadius.circular(borderRadius)),
+        decoration: BoxDecoration(
+          border: border,
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(borderRadius),
+        ),
         child: ClipRRect(
-            borderRadius: applyImageRadius ? BorderRadius.circular(borderRadius) : BorderRadius.zero,
-            child: isNetworkImage
-                ? CachedNetworkImage(
-                    fit: fit,
-                    imageUrl: imageUrl,
-                    progressIndicatorBuilder: (context, url, progress) {
-                      return HkShimmerEffect(width: width ?? double.infinity, height: height ?? 158);
-                    },
-                    errorWidget: (context, url, error) => const Icon(Icons.error),
-                  )
-                : Image(
-                    image: AssetImage(imageUrl) as ImageProvider,
-                    fit: fit,
-                  )),
+          borderRadius: applyImageRadius ? BorderRadius.circular(borderRadius) : BorderRadius.zero,
+          child: isNetworkImage
+              ? CachedNetworkImage(
+            fit: fit,
+            imageUrl: imageUrl,
+            progressIndicatorBuilder: (context, url, progress) => HkShimmerEffect(
+              width: width ?? double.infinity,
+              height: height ?? double.infinity,
+            ),
+            errorWidget: (context, url, error) => const Center(child: Icon(Icons.error, color: Colors.red)),
+          )
+              : Image(
+            image: AssetImage(imageUrl),
+            fit: fit,
+          ),
+        ),
       ),
     );
   }

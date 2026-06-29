@@ -7,10 +7,10 @@ import 'package:shopping_store/features/shop/controllers/product/order_controlle
 import 'package:shopping_store/navigation_menu.dart';
 import 'package:shopping_store/utils/constants/colors.dart';
 import 'package:shopping_store/utils/constants/sizes.dart';
-import 'package:shopping_store/utils/helpers/cloud_helper_functions.dart';
 import 'package:shopping_store/utils/helpers/helper_functions.dart';
-
+import '../../../../../data/modal/orderModal/orderModal.dart';
 import '../../../../../utils/constants/image_strings.dart';
+import '../../../controllers/product/cart_controller.dart';
 
 class HkOrdersListItems extends StatelessWidget {
   const HkOrdersListItems({super.key});
@@ -19,11 +19,11 @@ class HkOrdersListItems extends StatelessWidget {
   Widget build(BuildContext context) {
     final dark = HkHelperFunctions.isDarkMode(context);
     final controller = Get.put(OrderController());
+    Get.put(CartController());
 
-    return FutureBuilder(
+    return FutureBuilder<List<OrderModel>>(
         future: controller.fetchUserOrders(),
         builder: (context, snapshot) {
-          /// Nothing Found Widget
           final emptyWidget = HkAnimationLoader(
             text: 'Whoops! No Orders Yet!',
             animation: HkImages.orderCompletedAnimation,
@@ -32,11 +32,16 @@ class HkOrdersListItems extends StatelessWidget {
             onActionPressed: () => Get.off(() => const NavigationMenu()),
           );
 
-          /// Handle Loader, No record or Error Message
-          final widget = HkCloudHelperFunctions.checkMultiRecordState(snapshot: snapshot, nothingFound: emptyWidget);
-          if (widget != null) return widget;
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return const Center(child: Text('Something went wrong.'));
+          }
+          if (!snapshot.hasData || snapshot.data == null || snapshot.data!.isEmpty) {
+            return emptyWidget;
+          }
 
-          /// Record Found
           final orders = snapshot.data!;
           return ListView.separated(
             shrinkWrap: true,
@@ -46,6 +51,7 @@ class HkOrdersListItems extends StatelessWidget {
             itemCount: orders.length,
             itemBuilder: (context, index) {
               final order = orders[index];
+
               return HkRoundedContainer(
                 padding: const EdgeInsets.all(HkSizes.md),
                 showBorder: true,
@@ -53,16 +59,12 @@ class HkOrdersListItems extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    /// Row-1
                     Row(
                       children: [
-                        /// 1 - Icon
                         const Icon(Iconsax.ship),
                         const SizedBox(
                           width: HkSizes.spaceBtwItems / 2,
                         ),
-
-                        /// 2 - Status & Date
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -79,8 +81,6 @@ class HkOrdersListItems extends StatelessWidget {
                             ],
                           ),
                         ),
-
-                        /// 3 - Icon
                         IconButton(
                             onPressed: () {},
                             icon: const Icon(
@@ -92,21 +92,15 @@ class HkOrdersListItems extends StatelessWidget {
                     const SizedBox(
                       height: HkSizes.spaceBtwItems,
                     ),
-
-                    /// Row-2
                     Row(
                       children: [
-                        /// Order
                         Expanded(
                           child: Row(
                             children: [
-                              /// 1 - Icon
                               const Icon(Iconsax.tag),
                               const SizedBox(
                                 width: HkSizes.spaceBtwItems / 2,
                               ),
-
-                              /// 2 - Status & Date
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -130,18 +124,13 @@ class HkOrdersListItems extends StatelessWidget {
                             ],
                           ),
                         ),
-
-                        /// Shipping Date
                         Expanded(
                           child: Row(
                             children: [
-                              /// 1 - Icon
                               const Icon(Iconsax.calendar),
                               const SizedBox(
                                 width: HkSizes.spaceBtwItems / 2,
                               ),
-
-                              /// 2 - Status & Date
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,

@@ -1,62 +1,112 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:shopping_store/common/widgets/appbar/appbar.dart';
-import 'package:shopping_store/common/widgets/brands/brand_card.dart';
-import 'package:shopping_store/common/widgets/layouts/grid_layout.dart';
-import 'package:shopping_store/common/widgets/texts/section_heading.dart';
-import 'package:shopping_store/features/shop/controllers/product/brand_controller.dart';
-import 'package:shopping_store/features/shop/models/brand_model.dart';
-import 'package:shopping_store/features/shop/screens/brand/brand_products.dart';
-import 'package:shopping_store/utils/constants/sizes.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:iconsax/iconsax.dart';
 
-import '../../../../common/widgets/shimmer/brands_shimmer.dart';
+import '../../../../common/widgets/appbar/appbar.dart';
+import '../../../../common/widgets/custom_shapes/containers/rounded_container.dart';
+import '../../../../common/widgets/images/circular_image.dart';
+import '../../../../common/widgets/layouts/grid_layout.dart';
+import '../../../../common/widgets/products/product_cards/product_card_vertical.dart';
+import '../../../../common/widgets/texts/brand_title_text_with_verify_icon.dart';
+import '../../../../data/modal/brandModal/brandModal.dart';
+import '../../../../data/modal/productModal/productModal.dart';
+import '../../../../utils/constants/colors.dart';
+import '../../../../utils/constants/enums.dart';
+import '../../../../utils/constants/sizes.dart';
 
-class AllBrandsScreen extends StatelessWidget {
-  const AllBrandsScreen({super.key});
+class AllBrands extends StatelessWidget {
+  const AllBrands({
+    super.key,
+    this.category,
+    required this.brand, // Changed to required BrandModel
+    this.product,
+  });
+
+  final dynamic category;
+  final BrandModel? brand; // Changed to BrandModel
+  final List<ProductModel>? product;
 
   @override
   Widget build(BuildContext context) {
-    final brandController = BrandController.instance;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      appBar: const HkAppBar(
-        title: Text('Brand'),
+      appBar: HkAppBar(
         showBackArrow: true,
+        title: Text(
+          brand?.name ?? "All Brands",
+          style: GoogleFonts.nunito(fontSize: 20, fontWeight: FontWeight.w700),
+        ),
       ),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(HkSizes.defaultSpace),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              /// Heading
-              const HkSectionHeading(title: 'Brands'),
-              const SizedBox(
-                height: HkSizes.spaceBtwItems,
+              // Brand info section
+              GestureDetector(
+                onTap: () => print("Brand clicked"),
+                child: HkRoundedContainer(
+                  showBorder: true,
+                  padding: const EdgeInsets.all(HkSizes.sm),
+                  backgroundColor: Colors.transparent,
+                  child: Row(
+                    children: [
+                      HkCircularImage(
+                        height: 35,
+                        width: 35,
+                        isNetworkImage: true,
+                        image: brand?.image ?? '',
+                        backgroundColor: Colors.transparent,
+                        overlayColor: dark ? HkColors.light : HkColors.dark,
+                      ),
+                      const SizedBox(width: HkSizes.spaceBtwItems / 2),
+                      Expanded(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            HkBrandTitleWithVerifyIcon(
+                              title: brand?.name ?? "Brand",
+                              brandTextSize: TextSizes.large,
+                              textColor: dark ? HkColors.light : HkColors.dark,
+                            ),
+                            Text(
+                              '${brand?.productCount ?? 0} products',
+                              style: GoogleFonts.nunito(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: dark ? Colors.white : Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-
-              /// Brands
-              Obx(
-                      (){
-                    if(brandController.isLoading.value) return const HkBrandsShimmer();
-
-                    if(brandController.allBrands.isEmpty){
-                      return Center(
-                        child: Text('No Data Found!', style: Theme.of(context).textTheme.bodyMedium!.apply(color: Colors.white),),
-                      );
-                    }
-
-                    return HkGridLayout(
-                      itemCount: brandController.allBrands.length,
-                      mainAxisExtent: 80,
-                      itemBuilder: (context, index) {
-                        final brand = brandController.allBrands[index];
-                        return HkBrandCard(
-                            showBorder: false,
-                            brand: brand,
-                          onTap: () => Get.to(() => BrandProducts(brand: brand,)),
-                        );
-                      },
-                    );
+              const SizedBox(height: 60),
+              // Sorting dropdown
+              DropdownButtonFormField(
+                decoration: const InputDecoration(prefixIcon: Icon(Iconsax.sort)),
+                items: ['Name', 'Lower Price', 'Higher Price', 'Sale', 'Newest']
+                    .map((filter) => DropdownMenuItem(value: filter, child: Text(filter)))
+                    .toList(),
+                onChanged: (value) {},
+              ),
+              const SizedBox(height: HkSizes.spaceBtwSections),
+              // Products grid
+              HkGridLayout(
+                itemCount: product?.length ?? 0,
+                itemBuilder: (context, index) {
+                  if (product == null || product!.isEmpty) {
+                    return const SizedBox();
                   }
+                  final currentProduct = product![index];
+                  return HkProductCardVertical(product: currentProduct);
+                },
               ),
             ],
           ),

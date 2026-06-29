@@ -1,22 +1,20 @@
-
-
-
-
 import 'dart:convert';
-
+import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
-import 'package:shopping_store/data/repositories/product_repository.dart';
-import 'package:shopping_store/features/shop/models/product_model.dart';
-import 'package:shopping_store/utils/helpers/cloud_helper_functions.dart';
+import 'package:shopping_store/data/modal/productModal/productModal.dart';
 import 'package:shopping_store/utils/helpers/helper_functions.dart';
 import 'package:shopping_store/utils/local_storage/storage_utility.dart';
 
-class FavouriteController extends GetxController{
+import 'cart_controller.dart';
+
+class FavouriteController extends GetxController {
   static FavouriteController get instance => Get.find();
 
-  /// Variables
   final favourites = <String, bool>{}.obs;
+  final favouriteProductsList = <ProductModel>[].obs;
 
+  // CartController se popularProducts access kar rahe hain
+  final CartController cartController = Get.find<CartController>();
 
   @override
   void onInit() {
@@ -24,41 +22,65 @@ class FavouriteController extends GetxController{
     initFavourites();
   }
 
-  // Method to initialize favourites by reading from storage
-  Future<void> initFavourites() async{
+  Future<void> initFavourites() async {
     final json = await HkLocalStorage.instance().readData('favourites');
-    if(json != null){
+    if (json != null) {
       final storedFavourites = jsonDecode(json) as Map<String, dynamic>;
-      favourites.assignAll(storedFavourites.map((key, value) => MapEntry(key, value as bool),));
+      favourites.assignAll(
+        storedFavourites.map((key, value) => MapEntry(key, value as bool)),
+      );
     }
+    loadFavouriteProducts();
   }
 
-  bool isFavourite(String productId){
+  bool isFavourite(String productId) {
     return favourites[productId] ?? false;
   }
 
-
-  void toggleFavouriteProduct(String productId){
-    if(!favourites.containsKey(productId)){
+  Future<void> toggleFavouriteProduct(String productId) async {
+    if (!favourites.containsKey(productId)) {
       favourites[productId] = true;
-      saveFavouritesToStorage();
-      HkHelperFunctions.customToast(message: 'Product has been added to the Wishlist');
-    }else{
-      HkLocalStorage.instance().removeData(productId);
+      HkHelperFunctions.customToast(message: 'Product added to Wishlist ❤️');
+    } else {
       favourites.remove(productId);
-      saveFavouritesToStorage();
-      favourites.refresh();
-      HkHelperFunctions.customToast(message: 'Product has been removed to the Wishlist');
+      HkHelperFunctions.customToast(message: 'Product removed from Wishlist');
     }
+
+    await saveFavouritesToStorage();
+    loadFavouriteProducts();
   }
 
-  void saveFavouritesToStorage(){
+  Future<void> saveFavouritesToStorage() async {
     final encodedFavourites = jsonEncode(favourites);
-    HkLocalStorage.instance().saveData('favourites', encodedFavourites);
+    await HkLocalStorage.instance().saveData('favourites', encodedFavourites);
   }
 
-  Future<List<ProductModel>> favouriteProducts() async{
-      final productIds = favourites.keys.toList();
-      return await ProductRepository.instance.getFavouriteProducts(productIds);
+  // 🔥 Dynamic Products from CartController
+  void loadFavouriteProducts() {
+    if (favourites.isEmpty) {
+      favouriteProductsList.clear();
+      return;
+    }
+
+    final List<ProductModel> filteredProducts = [];
+
+    for (var item in cartController.popularProducts) {
+      final String productId = (item['_id'] ?? item['id'] ?? '').toString();
+
+      if (favourites.containsKey(productId)) {
+        try {
+          final product = ProductModel.fromJson(item);
+          filteredProducts.add(product);
+        } catch (e) {
+          debugPrint("Error converting product: $e");
+        }
+      }
+    }
+
+    favouriteProductsList.assignAll(filteredProducts);
+  }
+
+  void refreshFavourites() {
+    loadFavouriteProducts();
   }
 }

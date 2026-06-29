@@ -16,7 +16,7 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = UserController.instance;
+    final controller = Get.put(UserController());
     return Scaffold(
       appBar: const HkAppBar(
         showBackArrow: true,
@@ -33,7 +33,7 @@ class ProfileScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     Obx((){
-                      final networkImage = controller.user.value.profilePicture;
+                      final networkImage = controller.user.value.profilePic;
                       final image = networkImage.isNotEmpty ? networkImage : HkImages.user ;
                       return controller.imageUploading.value
                           ? const HkShimmerEffect(width: 80, height: 80, radius: 80,)

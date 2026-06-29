@@ -1,53 +1,58 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shopping_store/common/widgets/layouts/grid_layout.dart';
-import 'package:shopping_store/common/widgets/products/product_cards/product_card_vertical.dart';
-import 'package:shopping_store/common/widgets/shimmer/vertical_product_shimmer.dart';
-import 'package:shopping_store/features/shop/controllers/product/all_products_controller.dart';
-import 'package:shopping_store/utils/helpers/cloud_helper_functions.dart';
-import '../../../../common/widgets/appbar/appbar.dart';
-import '../../../../common/widgets/products/sortable/sortable_products.dart';
-import '../../../../utils/constants/sizes.dart';
-import '../../models/product_model.dart';
+import 'package:shopping_store/common/widgets/appbar/appbar.dart';
 
+import '../../../../common/widgets/layouts/grid_layout.dart';
+import '../../../../common/widgets/products/product_cards/product_card_vertical.dart';
+import '../../../../data/modal/categoryModal/categoryModal.dart'; // CategoryModel का इम्पोर्ट जोड़ा
+import '../../../../data/modal/productModal/productModal.dart';
+import '../../../../utils/constants/sizes.dart';
 
 class AllProducts extends StatelessWidget {
-  const AllProducts({super.key, required this.title, this.query, this.futureMethod});
+  // === बदलाव: यहाँ कंस्ट्रक्टर में CategoryModel और प्रॉडक्ट्स लिस्ट को एक्सेप्ट किया गया है ===
+  const AllProducts({super.key, required this.category, required this.products});
 
-  final String title;
-  final Query? query;
-  final Future<List<ProductModel>>? futureMethod;
+  final CategoryModel category;
+  final List<dynamic> products;
+
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(AllProductsController());
-    
+
     return Scaffold(
-      appBar: HkAppBar(title: Text(title), showBackArrow: true,),
+      appBar: HkAppBar(
+        showBackArrow: true,
+        title: Text(category.name, style: GoogleFonts.nunito(fontSize: 20, fontWeight: FontWeight.w700),),
+      ),
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(HkSizes.defaultSpace),
-          child: FutureBuilder(
-            future: futureMethod ?? controller.fetchProductsByQuery(query),
-            builder: (context, snapshot) {
-              // Check the state of FutureBuilder snapshot
-              const loader = HkVerticalProductShimmer();
-              final widget = HkCloudHelperFunctions.checkMultiRecordState(snapshot: snapshot,loader: loader);
-
-              // Return appropriate widget based on snapshot state
-              if(widget != null) return widget;
-
-              // Products Found
-              final products = snapshot.data!;
-
-              return HkSortableProducts(products: products,);
-            }
-          ),
-        ),
+          child:Padding(
+              padding: const EdgeInsets.only(top: 27,left: 30,right: 27),
+              child: Column(
+                  children: [
+                    DropdownButtonFormField(
+                      decoration: const InputDecoration(
+                        prefixIcon: Icon(Iconsax.sort),
+                      ),
+                      items: ['Name', 'Lower Price', 'Higher Price', 'Sale', 'Newest'].map((filter){
+                        return DropdownMenuItem(
+                            value: filter,
+                            child: Text(filter));
+                      }).toList(),
+                      onChanged: (value) {
+                        print("Selected: $value");
+                      },
+                    ),
+                    const SizedBox(height: HkSizes.spaceBtwItems),
+                    HkGridLayout(
+                        itemCount: products.length,
+                        itemBuilder: (context, index) {
+                          final productModel = ProductModel.fromJson(products[index]);
+                          return HkProductCardVertical(product: productModel);
+                        })
+                  ]
+              )
+          )
       ),
     );
   }
 }
-

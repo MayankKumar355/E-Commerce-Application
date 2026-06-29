@@ -1,82 +1,118 @@
-
-
-
-
-
+import 'dart:convert';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:shopping_store/data/dummy_data.dart';
-import 'package:shopping_store/data/repositories/categories/category_repository.dart';
-import 'package:shopping_store/data/repositories/product_repository.dart';
-import 'package:shopping_store/features/shop/models/product_model.dart';
-import 'package:shopping_store/utils/helpers/helper_functions.dart';
+import 'package:http/http.dart' as http;
+import 'package:shopping_store/connection/apiConnetion.dart';
+import 'package:shopping_store/features/shop/screens/sub_category/sub_categories.dart';
 
-import '../models/category_model.dart';
+import '../../../data/modal/categoryModal/categoryModal.dart';
 
-class CategoryController extends GetxController{
+class CategoryController extends GetxController {
   static CategoryController get instance => Get.find();
 
-
-  /// Variables
-  RxList<CategoryModel> allCategories = <CategoryModel>[].obs;
-  RxList<CategoryModel> featuredCategories = <CategoryModel>[].obs;
-  RxBool isLoading = false.obs;
-  final categoryRepository = Get.put(CategoryRepository());
-
+  var isLoading = false.obs;
+  var allCategories = <CategoryModel>[].obs;
+  var featuredCategories = <CategoryModel>[].obs;
+  var subCategoriesList = <CategoryModel>[].obs;
 
   @override
   void onInit() {
-
-    //categoryRepository.uploadDummyData(HkDummyData.categories);
-    fetchCategories();
-
     super.onInit();
+    fetchCategories();
+    fetchFeaturedCategories();
   }
 
-  /// Load Category Data
-  Future<void> fetchCategories() async{
-
-    try{
-      // Show Loader while loading categories
+  Future<void> fetchCategories() async {
+    try {
       isLoading.value = true;
+      final response = await http.get(Uri.parse(ApiConnection.categoryAllUrl));
 
-      // Fetch Categories from data source (Firebase, API, etc)
-      final categories = await categoryRepository.getAllCategories();
-
-      // Update Rx Categories List
-      allCategories.assignAll(categories);
-
-      // Filter Featured Categories
-      featuredCategories.assignAll(categories.where((category) => category.isFeatured && category.parentId.isEmpty).take(8).toList());
-
-    }catch(e){
-      HkHelperFunctions.errorSnackBar(title: 'Oh Snap!', message: e.toString());
-    }finally{
-      // Remove Loader
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+        if (responseData['success'] == true) {
+          List<dynamic> data = responseData['data'];
+          allCategories.assignAll(
+              data.map((json) => CategoryModel.fromJson(json)).toList()
+          );
+        }
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to load all categories: $e');
+    } finally {
       isLoading.value = false;
     }
   }
 
-  /// Load Selected Category Data
- Future<List<CategoryModel>> getSubCategories(String categoryId) async{
-    try{
+  Future<void> fetchFeaturedCategories() async {
+    try {
+      isLoading.value = true;
+      final response = await http.get(Uri.parse(ApiConnection.categoryFeaturedUrl));
 
-      final subCategories = await categoryRepository.getSubCategories(categoryId);
-      return subCategories;
-
-    }catch(e){
-      HkHelperFunctions.errorSnackBar(title: 'Oh Snap!', message: e.toString());
-      return [];
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+        if (responseData['success'] == true) {
+          List<dynamic> data = responseData['data'];
+          featuredCategories.assignAll(
+              data.map((json) => CategoryModel.fromJson(json)).toList()
+          );
+        }
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to load featured categories: $e');
+    } finally {
+      isLoading.value = false;
     }
- }
+  }
 
-  /// Get Category or Sub_Category Products
-  Future<List<ProductModel>> getCategoryProducts({required String categoryId, int limit = 4}) async{
-    try{
-      final products = await ProductRepository.instance.getProductsForCategory(categoryId: categoryId, limit: limit);
-      return products;
-    }catch(e){
-      HkHelperFunctions.errorSnackBar(title: 'Oh Snap!', message: e.toString());
+  Future<List<dynamic>> getCategoryProducts({required String categoryId}) async {
+    try {
+      final response = await http.get(Uri.parse("${ApiConnection.subCategoryProductsUrl}$categoryId"));
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+        if (responseData['success'] == true) {
+          return responseData['data'] ?? [];
+        }
+      }
+      return [];
+    } catch (e) {
       return [];
     }
   }
+  Future<List<CategoryModel>> getSubCategories(String categoryId) async {
+    try {
+      final filteredList = allCategories.where((cat) {
+        if (cat.parentId == null) return false;
+        return cat.parentId.toString() == categoryId.toString();
+      }).toList();
+
+      return filteredList;
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<void> fetchSubCategoriesAndGo(CategoryModel category) async {
+    try {
+      subCategoriesList.clear();
+
+      if (Get.context != null) {
+        Navigator.push(
+          Get.context!,
+          MaterialPageRoute(builder: (context) => SubCategoriesScreen(category: category)),
+        );
+      }
+
+      isLoading.value = true;
+      final subs = await getSubCategories(category.dbId);
+      subCategoriesList.assignAll(subs);
+
+    } catch (e) {
+      print("[DEBUG] Navigation Catch Error: $e");
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
 }

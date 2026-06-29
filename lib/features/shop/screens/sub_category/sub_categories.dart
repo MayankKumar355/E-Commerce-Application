@@ -1,112 +1,114 @@
-
-
-
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shopping_store/common/widgets/appbar/appbar.dart';
-import 'package:shopping_store/common/widgets/custom_shapes/containers/rounded_container.dart';
-import 'package:shopping_store/common/widgets/images/rounded_image.dart';
 import 'package:shopping_store/common/widgets/products/product_cards/product_card_horizontal.dart';
-import 'package:shopping_store/common/widgets/shimmer/horizontal_product_shimmer.dart';
 import 'package:shopping_store/common/widgets/texts/section_heading.dart';
-import 'package:shopping_store/features/shop/controllers/category_controller.dart';
-import 'package:shopping_store/features/shop/models/category_model.dart';
-import 'package:shopping_store/features/shop/models/product_model.dart';
 import 'package:shopping_store/features/shop/screens/all_products/all_products.dart';
+import 'package:shopping_store/features/shop/screens/product_details/product_details.dart'; // इसे इम्पोर्ट किया गया
 import 'package:shopping_store/utils/constants/sizes.dart';
-import 'package:shopping_store/utils/helpers/cloud_helper_functions.dart';
 
-import '../../../../utils/constants/image_strings.dart';
+import '../../../../data/modal/categoryModal/categoryModal.dart';
+import '../../../../data/modal/productModal/productModal.dart';
+import '../../controllers/category_controller.dart';
 
 class SubCategoriesScreen extends StatelessWidget {
   const SubCategoriesScreen({super.key, required this.category});
 
-
   final CategoryModel category;
+
   @override
   Widget build(BuildContext context) {
     final controller = CategoryController.instance;
+
     return Scaffold(
       appBar: HkAppBar(
         showBackArrow: true,
-        title: Text(category.name, style: Theme.of(context).textTheme.headlineSmall,),
+        title: Text(
+          category.name,
+          style: GoogleFonts.nunito(fontSize: 20, fontWeight: FontWeight.w700),
+        ),
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(HkSizes.defaultSpace),
-          child: Column(
-            children: [
-              /// Banner
-              const HkRoundedImage(imageUrl: HkImages.promoBanner2,width: double.infinity,applyImageRadius: true,),
-              const SizedBox(height: HkSizes.spaceBtwSections,),
+          padding: const EdgeInsets.only(top: 27, left: 30),
+          child: Obx(() {
+            if (controller.isLoading.value) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-              /// Sub Categories
-              FutureBuilder(
-                future: controller.getSubCategories(category.id),
-                builder: (context, snapshot) {
+            if (controller.subCategoriesList.isEmpty) {
+              return const Center(child: Text("No Sub Categories Found!"));
+            }
 
-                  /// Handle Loader, No Message, Error
-                  const loader = HkHorizontalProductShimmer();
-                  final widget = HkCloudHelperFunctions.checkMultiRecordState(snapshot: snapshot, loader: loader);
-                  if(widget != null) return widget;
+            return Column(
+              children: [
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: controller.subCategoriesList.length,
+                  itemBuilder: (context, subIndex) {
+                    final subCategory = controller.subCategoriesList[subIndex];
 
-                  /// Record Found
-                  final subCategories = snapshot.data!;
-
-                  return ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: subCategories.length,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemBuilder: (context, index) {
-
-                      final subCategory = subCategories[index];
-
-                      return FutureBuilder(
-                        future: controller.getCategoryProducts(categoryId: subCategory.id),
-                        builder: (context, snapshot) {
-
-                          /// Handle Loader, No Message, Error
-                          final widget = HkCloudHelperFunctions.checkMultiRecordState(snapshot: snapshot, loader: loader);
-                          if(widget != null) return widget;
-
-                          /// Record Found
-                          final products = snapshot.data!;
-
-                          return Column(
-                            children: [
-                              /// Heading
-                              HkSectionHeading(title: subCategory.name, showActionButton: true,
-                                onPressed: () => Get.to(() => AllProducts(
-                                    title: subCategory.name,
-                                  futureMethod: controller.getCategoryProducts(categoryId: subCategory.id,limit: -1),
-                                )),
-                              ),
-                              const SizedBox(height: HkSizes.spaceBtwItems / 2,),
-                          
-                              SizedBox(
-                                height: 120,
-                                child: ListView.separated(
-                                    separatorBuilder: (context, index) => const SizedBox(width: HkSizes.spaceBtwItems,),
-                                    itemCount: products.length,
-                                    scrollDirection: Axis.horizontal,
-                                    itemBuilder: (context, index) => HkProductCardHorizontal(product: products[index])
-                                ),
-                              ),
-
-                              const SizedBox(height: HkSizes.spaceBtwSections,)
-                          
-                            ],
+                    return FutureBuilder<List<dynamic>>(
+                      future: controller.getCategoryProducts(categoryId: subCategory.id),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const SizedBox(
+                            height: 120,
+                            child: Center(child: CircularProgressIndicator()),
                           );
                         }
-                      );
+
+                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                          return const SizedBox.shrink();
+                        }
+
+                        final products = snapshot.data!;
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            HkSectionHeading(
+                              title: subCategory.name,
+                              onPressed: () {
+                                Get.to(() => AllProducts(
+                                  category: subCategory,
+                                  products: products,
+                                ));
+                              },
+                              showActionButton: true,
+                            ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              height: 120,
+                              child: ListView.separated(
+                                shrinkWrap: true,
+                                scrollDirection: Axis.horizontal,
+                                itemCount: products.length,
+                                separatorBuilder: (context, index) => const SizedBox(width: HkSizes.spaceBtwItems / 2),
+                                itemBuilder: (context, index) {
+                                  final productModel = ProductModel.fromJson(products[index]);
+
+                                  // === बदलाव: यहाँ कार्ड पर क्लिक करने पर डिटेल स्क्रीन ओपन होने का लॉजिक जोड़ा गया है ===
+                                  return GestureDetector(
+                                    onTap: () {
+                                      Get.to(() => ProductDetailsScreen(product: productModel));
+                                    },
+                                    child: HkProductCardHorizontal(product: productModel),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                          ],
+                        );
                       },
-                  );
-                }
-              )
-            ],
-          ),
+                    );
+                  },
+                ),
+              ],
+            );
+          }),
         ),
       ),
     );

@@ -1,93 +1,103 @@
-
-
-
-
+import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
-import 'package:shopping_store/data/repositories/authentication/authentication_repository.dart';
-import 'package:shopping_store/data/repositories/user/user_repository.dart';
-import 'package:shopping_store/features/authentication/models/user_model.dart';
-import 'package:shopping_store/features/authentication/screens/signup/verify_email.dart';
+import 'package:http/http.dart' as http;
+import 'package:get_storage/get_storage.dart';
+import 'package:shopping_store/navigation_menu.dart';
 import 'package:shopping_store/utils/helpers/helper_functions.dart';
 import 'package:shopping_store/utils/helpers/network_manager.dart';
 import 'package:shopping_store/utils/popups/full_screen_loader.dart';
 
+import 'package:shopping_store/connection/apiConnetion.dart';
 import '../../../../utils/constants/image_strings.dart';
 
-class SignupController extends GetxController{
+class SignupController extends GetxController {
   static SignupController get instance => Get.find();
 
   /// Variables
-  final hidePassword = true.obs; // observing for hiding/showing password
-  final privacyPolicy = true.obs; // observing for hiding/showing privacyPolicy checkbox
+  final hidePassword = true.obs;
+  final privacyPolicy = true.obs;
+  final localStorage = GetStorage();
+
+  // Form Field Controllers
   final email = TextEditingController();
   final firstName = TextEditingController();
   final lastName = TextEditingController();
   final username = TextEditingController();
   final password = TextEditingController();
   final phoneNumber = TextEditingController();
+
   GlobalKey<FormState> signupFormKey = GlobalKey<FormState>();
 
-  /// -- SIGNUP
-  Future<void> signup() async{
-    try{
-      // Start Loading
-      HkFullScreenLoader.openLoadingDialog('We are processing your information...', HkImages.docerAnimation);
-
-      // Check Internet Connectivity
-      final isConnected = await NetworkManager.instance.isConnected();
-      if(!isConnected){
-        HkFullScreenLoader.stopLoading();
+  /// -- SIGNUP METHOD
+  Future<void> signup() async {
+    try {
+      if (!signupFormKey.currentState!.validate()) {
         return;
       }
 
-      // Form Validation
-      if(!signupFormKey.currentState!.validate()){
-        HkFullScreenLoader.stopLoading();
-        return;
-      }
-
-      // Privacy Policy Check
-      if(!privacyPolicy.value){
-        HkFullScreenLoader.stopLoading();
-        HkHelperFunctions.warningSnackBar(
-            title: 'Accept privacy Policy',
-          message: 'In order to create account, you must have to read and accept the Privacy Policy & Terms of Use.'
+      // 2. Privacy Policy Check
+      if (!privacyPolicy.value) {
+        HkHelperFunctions.errorSnackBar(
+            title: 'Privacy Policy',
+            message: 'In order to create account, you must have to read and accept the Privacy Policy & Terms of Use.'
         );
         return;
       }
 
-      // Register user in the Firebase Authentication & Save user data in Firebase
-      final userCredential = await AuthenticationRepository.instance.registerWithEmailAndPassword(email.text.trim(), password.text.trim());
+      // 3. Start Loading Animation
+      HkFullScreenLoader.openLoadingDialog('Creating your account...', HkImages.docerAnimation);
 
-      // Save Authenticated user data in the Firebase FireStore
-      final newUser = UserModel(
-          id: userCredential.user!.uid,
-          firstName: firstName.text.trim(),
-          lastName: lastName.text.trim(),
-          username: username.text.trim(),
-          email: email.text.trim(),
-          phoneNumber: phoneNumber.text.trim(),
-          profilePicture: ''
-      );
-      
-      final userRepository = Get.put(UserRepository());
-      await userRepository.saveUserRecord(newUser);
-      
-      // Show Success Message
-      HkHelperFunctions.successSnackBar(title: 'Congratulations', message: 'Your account has been created! Verify email to continue');
+      // 4. Check Internet Connectivity
+      final isConnected = await NetworkManager.instance.isConnected();
+      if (!isConnected) {
+        HkFullScreenLoader.stopLoading();
+        return;
+      }
 
-      // Stop Loading
+      String fullName = "${firstName.text.trim()} ${lastName.text.trim()}";
+
+      // 🔥 BACKEND INTEGRATION WITH USERNAME & PHONE NUMBER
+      final response = await http.post(
+        Uri.parse(ApiConnection.registerUrl),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "name": fullName,
+          "firstName": firstName.text.trim(),
+          "lastName": lastName.text.trim(),
+          "email": email.text.trim(),
+          "password": password.text.trim(),
+          "username": username.text.trim(),
+          "phoneNumber": phoneNumber.text.trim(),
+        }),
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
       HkFullScreenLoader.stopLoading();
 
-      // Move to Verify Email Screen
-      Get.to(()=> VerifyEmailScreen(email: email.text.trim(),));
-    }catch(e){
-      // Stop Loading
-      HkFullScreenLoader.stopLoading();
+      if (response.statusCode == 201 && data['token'] != null) {
+        localStorage.write('TOKEN', data['token']);
+        localStorage.write('USER_DATA', data['user']); // Isme username aur phone number bhi save ho jayenge
 
-      // Show some Generic error to user
-      HkHelperFunctions.errorSnackBar(title: 'Oh Snap!',message: e.toString());
+        // Show Success Message
+        HkHelperFunctions.successSnackBar(
+            title: 'Congratulations',
+            message: 'Your account has been created!'
+        );
+
+        // Move to Dashboard Directly
+        Get.offAll(() => const NavigationMenu());
+      } else {
+        HkHelperFunctions.errorSnackBar(
+            title: 'Oh Snap!',
+            message: data['message'] ?? 'Registration failed.'
+        );
+      }
+
+    } catch (e) {
+      HkFullScreenLoader.stopLoading();
+      HkHelperFunctions.errorSnackBar(title: 'Oh Snap!', message: e.toString());
     }
   }
 }

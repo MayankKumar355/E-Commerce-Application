@@ -25,19 +25,21 @@ class HkCartCounterIcon extends StatelessWidget {
           color: iconColor ?? (dark ? HkColors.light : HkColors.dark),
         ),
         Positioned(
-          right: 0,
+          right: 8,
+          top: 8,
           child: Container(
-            height: 18,
-            width: 18,
+            height: 15,
+            width: 15,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: dark ? HkColors.light : HkColors.dark,
+              color: dark ? HkColors.dark : HkColors.light,
             ),
             child: Center(
                 child: Obx(
-                  () => Text(
-                                controller.noOfCartItem.value.toString(),
-                                style: Theme.of(context).textTheme.labelLarge!.apply(color: textColor ?? (dark ? HkColors.dark : HkColors.light), fontSizeFactor: 0.8),
+                  () => Text(controller.noOfCartItem.value.toString(),
+                                style: Theme.of(context).textTheme.labelLarge!.
+                                apply(color: textColor ?? (dark ? HkColors.light :
+                                HkColors.dark), fontSizeFactor: 0.8),
                               ),
                 )),
           ),

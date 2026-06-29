@@ -1,30 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shopping_store/common/widgets/appbar/appbar.dart';
 import 'package:shopping_store/common/widgets/icons/circular_icon.dart';
 import 'package:shopping_store/common/widgets/layouts/grid_layout.dart';
 import 'package:shopping_store/common/widgets/loaders/animation_loader.dart';
 import 'package:shopping_store/common/widgets/products/product_cards/product_card_vertical.dart';
-import 'package:shopping_store/common/widgets/shimmer/vertical_product_shimmer.dart';
-import 'package:shopping_store/features/shop/controllers/product/favourite_controller.dart';
-import 'package:shopping_store/navigation_menu.dart';
 import 'package:shopping_store/utils/constants/image_strings.dart';
-import 'package:shopping_store/utils/helpers/cloud_helper_functions.dart';
-
 import '../../../../utils/constants/sizes.dart';
-import '../../models/product_model.dart';
 import '../home/home.dart';
+import '../../../../features/shop/controllers/product/favourite_controller.dart';
 
 class FavouriteScreen extends StatelessWidget {
   const FavouriteScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final controller = FavouriteController.instance;
+    final controller = Get.put(FavouriteController());
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.refreshFavourites();
+    });
+
     return Scaffold(
       appBar: HkAppBar(
-        title: Text('WishList', style: Theme.of(context).textTheme.headlineMedium),
+        title: Text('Wishlist', style: GoogleFonts.nunito(fontSize: 20, fontWeight: FontWeight.w700)),
         actions: [
           HkCircularIcon(
             icon: Iconsax.add,
@@ -32,45 +33,49 @@ class FavouriteScreen extends StatelessWidget {
           )
         ],
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(HkSizes.defaultSpace),
+      body: Obx(() {
+        // Agar koi favourite nahi hai
+        if (controller.favourites.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(HkSizes.defaultSpace),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                 HkAnimationLoader(text: "No Items in Wishlist", animation:HkImages.pencilAnimation ),
+                  const SizedBox(height: HkSizes.spaceBtwSections),
+                  // Text(
+                  //   'Your wishlist is currently empty.\nStart adding your favorite products!',
+                  //   textAlign: TextAlign.center,
+                  //   style: GoogleFonts.nunito(fontSize: 14, color: Colors.grey),
+                  // ),
+                ],
+              ),
+            ),
+          );
+        }
 
-          /// Product Grid
-          child: Obx(
-            () => FutureBuilder(
-                future: controller.favouriteProducts(),
-                builder: (context, snapshot) {
-                  /// Nothing found widget
-                  final emptyWidget = HkAnimationLoader(
-                    text: 'Whoops! Wishlist is Empty...',
-                    animation: HkImages.pencilAnimation,
-                    showAction: true,
-                    actionText: "Let's add some",
-                    onActionPressed: () => Get.off(() => const NavigationMenu()),
-                  );
+        // Agar favourite products load ho rahe hain
+        if (controller.favouriteProductsList.isEmpty) {
+          return const Center(
+            child: CircularProgressIndicator(color: Colors.red),
+          );
+        }
 
-                  /// Loading Widget
-                  const loader = HkVerticalProductShimmer(
-                    itemCount: 6,
-                  );
-
-                  final widget = HkCloudHelperFunctions.checkMultiRecordState(snapshot: snapshot, loader: loader, nothingFound: emptyWidget);
-                  if (widget != null) return widget;
-
-                  final products = snapshot.data!;
-                  return HkGridLayout(
-                    itemCount: products.length,
-                    itemBuilder: (context, index) {
-                      return HkProductCardVertical(
-                        product: products[index],
-                      );
-                    },
-                  );
-                }),
+        // Real Dynamic Products
+        return SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(HkSizes.defaultSpace),
+            child: HkGridLayout(
+              itemCount: controller.favouriteProductsList.length,
+              itemBuilder: (context, index) {
+                final product = controller.favouriteProductsList[index];
+                return HkProductCardVertical(product: product);
+              },
+            ),
           ),
-        ),
-      ),
+        );
+      }),
     );
   }
 }

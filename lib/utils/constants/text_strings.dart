@@ -62,8 +62,8 @@ class HkTexts {
   static const String popularProducts = "Popular Products";
 
   // -- Home
-  static const String homeAppbarTitle = "Good day for shopping";
-  static const String homeAppbarSubTitle = "Abdul Haseeb";
+  static const String homeAppbarTitle = "Good Day For Shoping";
+  static const String homeAppbarSubTitle = "Mayank Kumar";
 
 
 }

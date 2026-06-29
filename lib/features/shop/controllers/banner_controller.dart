@@ -1,52 +1,49 @@
-
-
-
 import 'package:get/get.dart';
-import 'package:shopping_store/data/dummy_data.dart';
-import 'package:shopping_store/data/repositories/banner/banner_repository.dart';
+import '../../../data/modal/bannerModal/bannerModal.dart';
+import '../../../data/repositories/userRepositories/bannerRepositories.dart';
 import 'package:shopping_store/utils/helpers/helper_functions.dart';
 
-import '../models/banner_model.dart';
-
-class BannerController extends GetxController{
+class BannerController extends GetxController {
   static BannerController get instance => Get.find();
 
-  /// Variables
+  final BannerRepository _repository = BannerRepository();
+
   final carouselCurrentIndex = 0.obs;
   final isLoading = false.obs;
-  RxList<BannerModel> banners = <BannerModel>[].obs;
-  final repo = Get.put(BannerRepository());
 
-  /// Update Banner Navigational Dots
-  void updatePageIndicator(index){
-    carouselCurrentIndex.value = index;
-  }
-
+  final banners = <BannerModel>[].obs;
 
   @override
   void onInit() {
-    //repo.uploadDummyBanners(HkDummyData.banners);
     fetchBanners();
     super.onInit();
   }
 
-  /// Fetch Banners
-  Future<void> fetchBanners() async{
-    try{
-      // Start Loading
+  void updatePageIndicator(int index) {
+    carouselCurrentIndex.value = index;
+  }
+
+  Future<void> fetchBanners() async {
+    try {
       isLoading.value = true;
 
-      // fetch banners
-      final banners = await repo.fetchBanners();
+      final fetchedBanners = await _repository.fetchActiveBanners();
 
-      // Assign Banners
-      this.banners.assignAll(banners);
+      print("🎯 FETCHED BANNERS COUNT: ${fetchedBanners.length}");
 
-    }catch(e){
-      // Show Error SnackBar
-      HkHelperFunctions.errorSnackBar(title: 'Oh Snap!', message: e.toString());
-    }finally{
-      // Stop Loading
+      if (fetchedBanners.isNotEmpty) {
+        this.banners.assignAll(fetchedBanners);
+      } else {
+        print("⚠️ WARNING: Backend ne success return kiya, par banners ki list empty [] mili.");
+      }
+    } catch (e) {
+      print("❌ CRITICAL ERROR IN BANNER CONTROLLER: $e");
+
+      HkHelperFunctions.errorSnackBar(
+        title: 'Oh Snap!',
+        message: e.toString().replaceAll('Exception:', ''),
+      );
+    } finally {
       isLoading.value = false;
     }
   }

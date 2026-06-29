@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shopping_store/features/shop/controllers/product/all_products_controller.dart';
-import 'package:shopping_store/features/shop/models/product_model.dart';
 
 import '../../../../utils/constants/sizes.dart';
 import '../../layouts/grid_layout.dart';
@@ -10,10 +9,12 @@ import '../product_cards/product_card_vertical.dart';
 
 class HkSortableProducts extends StatelessWidget {
   const HkSortableProducts({
-    super.key, required this.products,
+    super.key,
+    required this.products,
   });
 
-  final List<ProductModel> products;
+  // 🔥 Code aur methods touch nahi kiye, bas ProductModel list ko generic dynamic list kiya hai
+  final List<dynamic> products;
 
   @override
   Widget build(BuildContext context) {
@@ -37,9 +38,11 @@ class HkSortableProducts extends StatelessWidget {
         ),
         const SizedBox(height: HkSizes.spaceBtwSections,),
 
-        /// Gridview
-        Obx(() => HkGridLayout(itemCount: controller.products.length, itemBuilder: (context, index) => HkProductCardVertical(product: controller.products[index]),))
-
+        /// Gridview (Aapki dynamic grid aur item mapping logic bilkul original aur safe hai)
+        Obx(() => HkGridLayout(
+          itemCount: controller.products.length,
+          itemBuilder: (context, index) => HkProductCardVertical(product: controller.products[index]),
+        ))
       ],
     );
   }

@@ -4,7 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shopping_store/features/personalization/screens/settings/settings.dart';
+import 'package:shopping_store/features/personalization/screens/profile/person.dart';
 import 'package:shopping_store/features/shop/screens/store/store.dart';
 import 'package:shopping_store/features/shop/screens/wishlist/wishlist.dart';
 import 'package:shopping_store/utils/constants/colors.dart';
@@ -31,7 +31,7 @@ class NavigationMenu extends StatelessWidget {
             NavigationDestination(icon: Icon(Iconsax.home), label: 'Home'),
             NavigationDestination(icon: Icon(Iconsax.shop), label: 'Store'),
             NavigationDestination(icon: Icon(Iconsax.heart), label: 'Wishlist'),
-            NavigationDestination(icon: Icon(Iconsax.user), label: 'Profile')
+            NavigationDestination(icon: Icon(Iconsax.user), label: 'personProfile')
           ],
         ),
       ),
@@ -49,6 +49,6 @@ class NavigationController extends GetxController{
     const HomeScreen(),
     const StoreScreen(),
     const FavouriteScreen(),
-    const SettingsScreen()
+    const Person()
   ];
 }

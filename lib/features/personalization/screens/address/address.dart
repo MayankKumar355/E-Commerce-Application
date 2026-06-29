@@ -2,14 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shopping_store/common/widgets/appbar/appbar.dart';
+import 'package:shopping_store/common/widgets/loaders/animation_loader.dart';
 import 'package:shopping_store/features/personalization/controllers/address_controller.dart';
 import 'package:shopping_store/features/personalization/screens/address/add_new_address.dart';
 import 'package:shopping_store/features/personalization/screens/address/widgets/single_address.dart';
 import 'package:shopping_store/utils/constants/sizes.dart';
-import 'package:shopping_store/utils/helpers/cloud_helper_functions.dart';
-
-import '../../../../common/widgets/loaders/animation_loader.dart';
-import '../../../../navigation_menu.dart';
+import '../../../../common/widgets/loader/circular_loader.dart';
 import '../../../../utils/constants/colors.dart';
 import '../../../../utils/constants/image_strings.dart';
 
@@ -19,6 +17,7 @@ class UserAddressScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(AddressController());
+
     return Scaffold(
       appBar: HkAppBar(
         showBackArrow: true,
@@ -31,30 +30,41 @@ class UserAddressScreen extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(HkSizes.defaultSpace),
           child: Obx(
-            () => FutureBuilder(
+                () => FutureBuilder(
               key: Key(controller.refreshData.value.toString()),
-                future: controller.getAllUserAddresses(),
-                builder: (context, snapshot) {
-                  /// Handle loader, no record, error message
-                  const emptyWidget = HkAnimationLoader(
-                    text: 'Whoops! Address is not available...',
-                    animation: HkImages.pencilAnimation,
-                    showAction: false,
+              future: controller.getAllUserAddresses(),
+              builder: (context, snapshot) {
+
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: HkCircularLoader());
+                }
+
+                if (!snapshot.hasData || snapshot.data == null || (snapshot.data as List).isEmpty) {
+                  return  Center(
+                    child: Padding(
+                      padding: EdgeInsets.only(top: 100),
+                      child: HkAnimationLoader(text: "'No Address Found! Please add a new address.'",
+                          animation:HkImages.pencilAnimation)
+                    ),
                   );
-                  final widget = HkCloudHelperFunctions.checkMultiRecordState(snapshot: snapshot,nothingFound: emptyWidget);
-                  if (widget != null) return widget;
+                }
+                final addresses = snapshot.data!;
 
-                  /// Record Found
-                  final addresses = snapshot.data!;
-
-                  return ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: addresses.length,
-                      itemBuilder: (context, index) => HkSingleAddress(
-                            address: addresses[index],
-                        onTap: () => controller.selectAddress(addresses[index]),
-                          ));
-                }),
+                return ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: addresses.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: HkSizes.spaceBtwItems),
+                  itemBuilder: (context, index) {
+                    final currentAddress = addresses[index];
+                    return HkSingleAddress(
+                      address: currentAddress,
+                      onTap: () => controller.selectAddress(currentAddress),
+                    );
+                  },
+                );
+              },
+            ),
           ),
         ),
       ),

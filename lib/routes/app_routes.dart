@@ -8,9 +8,10 @@ import 'package:shopping_store/features/authentication/screens/onboarding/onboar
 import 'package:shopping_store/features/authentication/screens/password_configuration/forget_passwrod.dart';
 import 'package:shopping_store/features/authentication/screens/signup/signup.dart';
 import 'package:shopping_store/features/authentication/screens/signup/verify_email.dart';
+import 'package:shopping_store/features/authentication/screens/splash/splashScreen.dart';
 import 'package:shopping_store/features/personalization/screens/address/address.dart';
+import 'package:shopping_store/features/personalization/screens/profile/person.dart';
 import 'package:shopping_store/features/personalization/screens/profile/profile.dart';
-import 'package:shopping_store/features/personalization/screens/settings/settings.dart';
 import 'package:shopping_store/features/shop/screens/cart/cart.dart';
 import 'package:shopping_store/features/shop/screens/checkout/checkout.dart';
 import 'package:shopping_store/features/shop/screens/home/home.dart';
@@ -25,7 +26,7 @@ class AppRoutes{
     GetPage(name: HkRoutes.home, page: () => const HomeScreen(),),
     GetPage(name: HkRoutes.store, page: () => const StoreScreen(),),
     GetPage(name: HkRoutes.favourites, page: () => const FavouriteScreen(),),
-    GetPage(name: HkRoutes.settings, page: () => const SettingsScreen(),),
+    GetPage(name: HkRoutes.person, page: () => const Person(),),
     GetPage(name: HkRoutes.productReviews, page: () => const ProductReviewsScreen(),),
     GetPage(name: HkRoutes.order, page: () => const OrdersScreen(),),
     GetPage(name: HkRoutes.checkout, page: () => const CheckoutScreen(),),
@@ -37,6 +38,7 @@ class AppRoutes{
     GetPage(name: HkRoutes.signIn, page: () => const LoginScreen(),),
     GetPage(name: HkRoutes.forgetPassword, page: () => const ForgetPassScreen(),),
     GetPage(name: HkRoutes.onBoarding, page: () => const OnBoardingScreen(),),
+    GetPage(name: HkRoutes.splash, page: () => const SplashScreen(),),
     // add more as needed
   ];
 }

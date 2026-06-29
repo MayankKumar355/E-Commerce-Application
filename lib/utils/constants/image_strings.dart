@@ -8,12 +8,18 @@ class HkImages {
   static const String darkAppLogo = "assets/logos/logo.png";
   static const String lightAppLogo = "assets/logos/logo.png";
 
+  //Spalsh Logo
+  static const String lightSplash = "assets/images/on_boarding_images/whiteSplash.png";
+  static const String darkSplash = "assets/images/on_boarding_images/blackSplash.png";
+
+
   // -- Social Logos
   static const String google = "assets/logos/google-icon.png";
   static const String facebook = "assets/logos/facebook-icon.png";
 
   // -- Category Icons
   static const String sportIcon = "assets/icons/categories/icons8-bowling-64.png";
+  static const String runIcon = "assets/icons/categories/run.png";
   static const String clothIcon = "assets/icons/categories/icons8-tailors-dummy-64.png";
   static const String shoeIcon = "assets/icons/categories/icons8-shoes-64.png";
   static const String cosmeticsIcon = "assets/icons/categories/icons8-cosmetics-64.png";
@@ -49,17 +55,34 @@ class HkImages {
 
 
   // -- OnBoarding Texts
-  static const String onBoardingImage1 = "assets/images/on_boarding_images/sammy-line-searching.gif";
-  static const String onBoardingImage2 = "assets/images/on_boarding_images/sammy-line-shopping.gif";
-  static const String onBoardingImage3 = "assets/images/on_boarding_images/sammy-line-delivery.gif";
+  static const String onBoardingImage1 = "assets/images/on_boarding_images/OnBoarding1.gif";
+  static const String onBoardingImage2 = "assets/images/on_boarding_images/OnBoarding2.gif";
+  static const String onBoardingImage3 = "assets/images/on_boarding_images/OnBoarding3.gif";
 
   // -- Products
 
   // Product 1
-  static const String productImage1 = "assets/images/products/nike-shoes.png";
+  static const String shoes = "assets/images/products/shoes.jpg";
+  static const String blackShoes = "assets/images/products/blackShoes.jpg";
+
+  static const String Iphone = "assets/images/products/Iphone.png";
+  static const String whiteIphone = "assets/images/products/whiteIphone.jpg";
+
+  static const String redTShirt = "assets/images/products/t-shirt.jpg";
+  static const String whiteTShirt = "assets/images/products/tshirtRed.jpg";
+
+  static const String watch = "assets/images/products/watch.jpg";
+  static const String whiteWatch = "assets/images/products/whiteWatch.jpg";
+
+  static const String powerBank = "assets/images/products/powerBank.jpg";
+  static const String whitePowerBank = "assets/images/products/whitePowerBank.jpg";
+
+
+
   static const String productImage23 = "assets/images/products/NikeWildhorse.png";
   static const String productImage21 = "assets/images/products/NikeAirMax.png";
   static const String productImage9 = "assets/images/products/NikeAirJordonwhiteMagenta.png";
+  static const String paymentSuccess = "assets/images/products/PaymentSuccess.png";
   // Product 2
   static const String productImage68 = "assets/images/products/tshirt_blue_without_collar_back.png";
   static const String productImage69 = "assets/images/products/tshirt_blue_without_collar_front.png";
@@ -218,8 +241,9 @@ class HkImages {
 
   //Banners
   static const String promoBanner1 = "assets/images/products/promo-banner-1.png";
-  static const String promoBanner2 = "assets/images/products/promo-banner-2.png";
-  static const String promoBanner3 = "assets/images/products/promo-banner-3.png";
+  static const String promoBanner2 = "assets/images/products/promoBannerTwo.jpg";
+  static const String promoBanner3 = "assets/images/products/promoBannerThree.jpg";
+
   static const String banner1 = "assets/images/banners/banner_1.jpg";
   static const String banner2 = "assets/images/banners/banner_2.jpg";
   static const String banner3 = "assets/images/banners/banner_3.jpg";

@@ -1,121 +1,173 @@
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shopping_store/common/widgets/custom_shapes/containers/rounded_container.dart';
-import 'package:shopping_store/common/widgets/images/rounded_image.dart';
-import 'package:shopping_store/common/widgets/products/favourite_icon/favourite_icon.dart';
-import 'package:shopping_store/common/widgets/products/product_price_text.dart';
 import 'package:shopping_store/common/widgets/texts/brand_title_text_with_verify_icon.dart';
-import 'package:shopping_store/common/widgets/texts/product_title.dart';
-import 'package:shopping_store/utils/constants/image_strings.dart';
 import 'package:shopping_store/utils/helpers/helper_functions.dart';
 
-import '../../../../features/shop/controllers/product/product_controller.dart';
-import '../../../../features/shop/models/product_model.dart';
+import '../../../../data/modal/productModal/productModal.dart';
 import '../../../../utils/constants/colors.dart';
-import '../../../../utils/constants/enums.dart';
 import '../../../../utils/constants/sizes.dart';
-import '../../../styles/shadows.dart';
-import '../../button/add_to_cart_button.dart';
-import '../../icons/circular_icon.dart';
+import '../../../../utils/constants/image_strings.dart';
 
 class HkProductCardHorizontal extends StatelessWidget {
   const HkProductCardHorizontal({super.key, required this.product});
 
   final ProductModel product;
+
   @override
   Widget build(BuildContext context) {
-    final controller = ProductController.instance;
-    final salePercentage = controller.calculateSalePercentage(product.price, product.salePrice);
     final dark = HkHelperFunctions.isDarkMode(context);
+
+    String rawThumbnail = product.thumbnail.isNotEmpty ? product.thumbnail : HkImages.Iphone;
+    if (rawThumbnail.startsWith('assets/assets/')) {
+      rawThumbnail = rawThumbnail.replaceFirst('assets/assets/', 'assets/');
+    }
+
+    final String thumbnailUrl = rawThumbnail;
+    final bool isNetwork = kIsWeb || thumbnailUrl.startsWith('http://') || thumbnailUrl.startsWith('https://');
+    final discount = product.discountPercentage;
 
     return Container(
       width: 310,
+      height: 125,
       padding: const EdgeInsets.all(1),
       decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(HkSizes.productImageRadius),
           color: dark ? HkColors.darkerGrey : HkColors.lightContainer),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          /// Thumbnail Discount Tag & Fav Icon
-          HkRoundedContainer(
-            height: 120,
-            padding: const EdgeInsets.all(HkSizes.sm),
-            backgroundColor: dark ? HkColors.dark : HkColors.light,
-            child: Stack(
-              children: [
-                /// Thumbnail Image
-                SizedBox(
-                  width: 120,
-                    height: 120,
-                    child: HkRoundedImage(imageUrl: product.thumbnail,applyImageRadius: true,isNetworkImage: true,)
-                ),
-
-                /// Sale Tag
-                if(salePercentage != null)
-                Positioned(
-                  top: 12,
-                  child: HkRoundedContainer(
-                    radius: HkSizes.sm,
-                    backgroundColor: HkColors.secondary.withOpacity(0.8),
-                    padding: const EdgeInsets.symmetric(horizontal: HkSizes.sm, vertical: HkSizes.xs),
-                    child: Text('$salePercentage%', style: Theme.of(context).textTheme.labelLarge!.apply(color: HkColors.black),),
+          /// Thumbnail Image Layout
+          Padding(
+            padding: const EdgeInsets.all(4.0),
+            child: HkRoundedContainer(
+              height: 120,
+              width: 120,
+              padding: const EdgeInsets.all(HkSizes.sm),
+              backgroundColor: dark ? HkColors.dark : Colors.white,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(HkSizes.productImageRadius),
+                      child: isNetwork
+                          ? CachedNetworkImage(
+                        imageUrl: thumbnailUrl,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                        errorWidget: (context, url, error) => Icon(
+                          Icons.shopping_bag_outlined,
+                          color: dark ? HkColors.white : HkColors.dark,
+                          size: 32,
+                        ),
+                      )
+                          : Image.asset(
+                        thumbnailUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Icon(
+                          Icons.shopping_bag_outlined,
+                          color: dark ? HkColors.white : HkColors.dark,
+                          size: 32,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
 
-                /// Favourite Icon Button
-                Positioned(
-                    right: 0,
-                    top: 0,
-                    child: HkFavouriteIcon(productId: product.id)
-                )
-              ],
+                  if (discount > 0)
+                    Positioned(
+                      top: 4,
+                      left: 4,
+                      child: HkRoundedContainer(
+                        radius: HkSizes.sm,
+                        backgroundColor: HkColors.secondary.withOpacity(0.8),
+                        padding: const EdgeInsets.symmetric(horizontal: HkSizes.sm, vertical: HkSizes.xs),
+                        child: Text('$discount%', style: const TextStyle(color: HkColors.black, fontSize: 10, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+
+                  const Positioned(
+                    right: 4,
+                    top: 4,
+                    child: Icon(Iconsax.heart, color: Colors.black, size: 20),
+                  )
+                ],
+              ),
             ),
           ),
 
-          ///  Details, Add to cart & Pricing
-          SizedBox(
-            width: 172,
+          /// Details Content Frame
+          Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(top: HkSizes.sm,left: HkSizes.sm),
+              padding: const EdgeInsets.symmetric(horizontal: HkSizes.md, vertical: HkSizes.sm),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  HkProductTitleText(title: product.title,smallSize: true),
-                  const SizedBox(height: HkSizes.spaceBtwItems / 2,),
-                  HkBrandTitleWithVerifyIcon(title: product.brand!.name),
-
-                  const Spacer(),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-
-                      /// Price
-                      Flexible(
-                        child: Column(
+                      Text(
+                        product.title,
+                        style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 14),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: HkSizes.spaceBtwItems / 4),
+                      HkBrandTitleWithVerifyIcon(title: product.brandName ?? 'Brand'),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      // Dynamic Price Section
+                      Expanded(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            /// if There is Sale then show sale actual price with line-through
-                            if(product.productType == ProductType.single.toString() && product.salePrice > 0.0)
-                              Padding(
-                                padding: const EdgeInsets.only(left: HkSizes.sm),
-                                child: Text(
-                                  product.price.toString(),
-                                  style: Theme.of(context).textTheme.bodyMedium!.apply(decoration: TextDecoration.lineThrough),
+                            if (product.salePrice > 0) ...[
+                              Text(
+                                '\$${product.salePrice} ',
+                                style: GoogleFonts.nunito(fontSize: 14, color: dark ? HkColors.white : HkColors.black, fontWeight: FontWeight.w700),
+                              ),
+                              Text(
+                                '\$${product.price}',
+                                style: GoogleFonts.nunito(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.w500,
+                                  decoration: TextDecoration.lineThrough,
                                 ),
                               ),
-
-                            /// Price, show sale price as main price if sale exist
-                            Padding(
-                              padding: const EdgeInsets.only(left: HkSizes.sm),
-                              child: HkProductPriceText(price: controller.getProductPrice(product)),
-                            ),
+                            ] else
+                              Text(
+                                '\$${product.price}',
+                                style: GoogleFonts.nunito(fontSize: 14,
+                                    color: dark ? HkColors.white : HkColors.black,
+                                    fontWeight: FontWeight.w700),
+                              ),
                           ],
                         ),
                       ),
-
-                      /// Add to Cart
-                      ProductCardAddToCartButton(product: product)
+                      Container(
+                        decoration: const BoxDecoration(
+                          color: HkColors.dark,
+                          borderRadius: BorderRadius.only(
+                            topLeft:  Radius.circular(HkSizes.cardRadiusMd),
+                            bottomRight: Radius.circular(HkSizes.productImageRadius),
+                          ),
+                        ),
+                        child: const SizedBox(
+                          width: HkSizes.iconLg * 1.5,
+                          height: HkSizes.iconLg * 1.5,
+                          child: Center(
+                            child: Icon(Iconsax.add, color: HkColors.white),
+                          ),
+                        ),
+                      ),
                     ],
                   )
                 ],

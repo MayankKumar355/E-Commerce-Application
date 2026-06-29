@@ -1,92 +1,147 @@
-
-
-
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:shopping_store/features/shop/controllers/product/cart_controller.dart';
-import 'package:shopping_store/features/shop/controllers/product/images_controller.dart';
-import 'package:shopping_store/features/shop/models/product_variation_model.dart';
+import 'package:shopping_store/common/widgets/custom_shapes/containers/rounded_container.dart';
+import 'package:shopping_store/common/widgets/products/product_price_text.dart';
+import 'package:shopping_store/common/widgets/texts/product_title.dart';
+import 'package:shopping_store/common/widgets/texts/section_heading.dart';
+import 'package:shopping_store/data/modal/productModal/productModal.dart';
+import 'package:shopping_store/utils/constants/colors.dart';
+import 'package:shopping_store/utils/constants/sizes.dart';
 import 'package:shopping_store/utils/helpers/helper_functions.dart';
 
-import '../../models/product_model.dart';
+import 'cart_controller.dart';
+import 'images_controller.dart';
 
-class VariationController extends GetxController{
+class VariationController extends GetxController {
   static VariationController get instance => Get.find();
 
-  /// Variables
-  RxMap selectedAttributes = {}.obs;
+  RxMap<String, String> selectedAttributes = <String, String>{}.obs;
   RxString variationStockStatus = ''.obs;
-  Rx<ProductVariationModel> selectedVariation = ProductVariationModel.empty().obs;
+  final Rx<dynamic> selectedVariation = Rx<dynamic>(null);
 
-  /// Select Attribute and Variation
-  void onAttributeSelected(ProductModel product, attributeName, attributeValue){
-    try{
-      Map<String, dynamic> selectedAttributes = Map<String, dynamic>.from(this.selectedAttributes);
+  void onAttributeSelected(ProductModel product, String attributeName, String attributeValue) {
+    try {
       selectedAttributes[attributeName] = attributeValue;
-      this.selectedAttributes[attributeName] = attributeValue; // i.e: selectedAttribute['Color'] : 'Green'
-
-      ProductVariationModel selectedVariation = product.productVariations!.firstWhere((variation) => _isSameAttributeValues(variation.attributeValues, selectedAttributes),orElse: () => ProductVariationModel.empty(),);
-
-      // Show the selected variation image as a Main Image
-      if(selectedVariation.image.isNotEmpty){
-        ImagesController.instance.selectedProductImage.value = selectedVariation.image;
+      final variations = product.productVariations ?? [];
+      if (variations.isEmpty) return;
+      dynamic foundVariation;
+      for (var variation in variations) {
+        final Map<String, dynamic> attributeValues = variation.attributeValues;
+        if (_isSameAttributeValues(attributeValues, selectedAttributes)) {
+          foundVariation = variation;
+          break;
+        }
       }
-
-      // Show selected variation quantity already in the cart
-      if(selectedVariation.id.isNotEmpty){
-        final cartController = CartController.instance;
-        cartController.productQuantityInCart.value = cartController.getVariationQuantityInCart(product.id, selectedVariation.id);
+      if (foundVariation != null) {
+        selectedVariation.value = foundVariation;
+        final String variationImage = foundVariation.image ?? '';
+        if (variationImage.isNotEmpty) {
+          ImagesController.instance.selectedProductImage.value = variationImage;
+        }
+        final String variationId = foundVariation.id ?? '';
+        if (variationId.isNotEmpty) {
+          try {
+            final cartController = CartController.instance;
+            cartController.productQuantityInCart.value = cartController.getVariationQuantityInCart(product.id, variationId);
+          } catch (e) {
+            print('Error updating cart: $e');
+          }
+        }
+        getProductVariationStockStatus();
+      } else {
+        selectedVariation.value = null;
+        variationStockStatus.value = 'Select all attributes';
       }
-
-      // Assign Selected Variation to Rx
-      this.selectedVariation.value = selectedVariation;
-      getProductVariationStockStatus();
-    }catch(e){
-      if(e.toString() == 'Bad state: No element'){
-        HkHelperFunctions.errorSnackBar(title: 'Oh Snap!', message: 'Product is not available');
-      }
-
+    } catch (e) {
+      print('Error in onAttributeSelected: $e');
+      selectedVariation.value = null;
     }
-
   }
 
-  /// Check if selected attributes matches any variation attributes
-  bool _isSameAttributeValues(Map<String, dynamic> variationAttributes, Map<String, dynamic> selectedAttributes){
-    // if selectedAttributes contains 3 attributes and current variation contains 2 then return
-    if(variationAttributes.length != selectedAttributes.length) return false ;
-
-    // If any of the attribute is different then return e.g [Green, Large] != [Green, Small]
-    for(final key in variationAttributes.keys){
-      if(variationAttributes[key] != selectedAttributes[key]) return false;
+  bool _isSameAttributeValues(Map<String, dynamic> variationAttributes, Map<String, String> selectedAttrs) {
+    try {
+      if (variationAttributes.length != selectedAttrs.length) return false;
+      for (final key in variationAttributes.keys) {
+        if (!selectedAttrs.containsKey(key)) return false;
+        final v1Value = variationAttributes[key];
+        final v2Value = selectedAttrs[key];
+        if (v1Value == null || v2Value == null) return false;
+        String v1 = v1Value.toString().toLowerCase().replaceAll('gb', '').trim();
+        String v2 = v2Value.toString().toLowerCase().replaceAll('gb', '').trim();
+        if (v1 != v2) return false;
+      }
+      return true;
+    } catch (e) {
+      print('Error comparing attributes: $e');
+      return false;
     }
-
-    return true;
   }
 
-  /// Check Attribute availability / Stock in variation
-  Set<String?> getAttributesAvailabilityInVariation(List<ProductVariationModel> variations, String attributeName){
-    // Pass the variation to check which attributes are available and stock is not 0
-    final availableVariationAttributeValues = variations.where((variation) =>
-        variation.attributeValues[attributeName]!.isNotEmpty && variation.attributeValues[attributeName] != null && variation.stock > 0
-    ).map((variation) =>  variation.attributeValues[attributeName]
-    ).toSet();
-
-    return availableVariationAttributeValues;
+  Set<String?> getAttributesAvailabilityInVariation(List<dynamic> variations, String attributeName) {
+    try {
+      return variations.where((variation) {
+        try {
+          final Map<String, dynamic> attrs = variation.attributeValues;
+          final val = attrs[attributeName]?.toString() ?? '';
+          final int stock = variation.stock ?? 0;
+          return val.isNotEmpty && stock > 0;
+        } catch (e) {
+          return false;
+        }
+      }).map((variation) {
+        try {
+          return variation.attributeValues[attributeName]?.toString();
+        } catch (e) {
+          return null;
+        }
+      }).toSet();
+    } catch (e) {
+      print('Error getting attributes availability: $e');
+      return {};
+    }
   }
 
-  String getVariationPrice(){
-    return (selectedVariation.value.salePrice > 0 ? selectedVariation.value.salePrice : selectedVariation.value.price).toStringAsFixed(0);
+  String getVariationPrice() {
+    if (selectedVariation.value == null) return '';
+    try {
+      final double salePrice = (selectedVariation.value.salePrice ?? 0.0).toDouble();
+      final double price = (selectedVariation.value.price ?? 0.0).toDouble();
+      final double finalPrice = salePrice > 0 ? salePrice : price;
+      return finalPrice > 0 ? finalPrice.toStringAsFixed(0) : '';
+    } catch (e) {
+      print('Error getting variation price: $e');
+      return '';
+    }
   }
 
-  /// Check product variation stock status
-  void getProductVariationStockStatus(){
-    variationStockStatus.value = selectedVariation.value.stock > 0 ? 'In Stock' : 'Out of Stock';
+  String getActualPrice() {
+    if (selectedVariation.value == null) return '';
+    try {
+      final double price = (selectedVariation.value.price ?? 0.0).toDouble();
+      return price > 0 ? price.toStringAsFixed(0) : '';
+    } catch (e) {
+      print('Error getting actual price: $e');
+      return '';
+    }
   }
 
-  /// Reset Selected Attributes when switching products
-  void resetSelectedAttributes(){
+  void getProductVariationStockStatus() {
+    try {
+      if (selectedVariation.value == null) {
+        variationStockStatus.value = 'Select variation';
+        return;
+      }
+      final int stock = selectedVariation.value.stock ?? 0;
+      variationStockStatus.value = stock > 0 ? 'In Stock' : 'Out of Stock';
+    } catch (e) {
+      print('Error getting product variation stock status: $e');
+      variationStockStatus.value = 'N/A';
+    }
+  }
+
+  void resetSelectedAttributes() {
     selectedAttributes.clear();
     variationStockStatus.value = '';
-    selectedVariation.value = ProductVariationModel.empty();
+    selectedVariation.value = null;
   }
-
 }

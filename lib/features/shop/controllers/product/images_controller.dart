@@ -1,65 +1,76 @@
-
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:shopping_store/features/shop/models/product_model.dart';
 import 'package:shopping_store/utils/constants/sizes.dart';
+import 'package:shopping_store/data/modal/productModal/productModal.dart';
 
-class ImagesController extends GetxController{
+class ImagesController extends GetxController {
   static ImagesController get instance => Get.find();
 
-  /// Variables
   RxString selectedProductImage = ''.obs;
 
-  List<String> getAllProductImages(ProductModel product){
-    // Use Set to add unique images only
+  List<String> getAllProductImages(ProductModel product) {
     Set<String> images = {};
-
-    // Load Thumbnail Image
-    images.add(product.thumbnail);
-
-    // Assign Thumbnail as Selected Image
-    selectedProductImage.value = product.thumbnail;
-
-    // Get all images from Product Model if not null
-    if(product.images != null){
-      images.addAll(product.images!);
+    String thumbnail = product.thumbnail;
+    images.add(thumbnail);
+    if (selectedProductImage.value.isEmpty) {
+      selectedProductImage.value = thumbnail;
     }
-
-    // Get all images from the Product Variation if not null
-    if(product.productVariations != null || product.productVariations!.isNotEmpty){
-      images.addAll(product.productVariations!.map((variation) => variation.image));
+    images.addAll(product.images ?? []);
+    if (product.productVariations != null && product.productVariations!.isNotEmpty) {
+      images.addAll(
+        product.productVariations!.map((variation) => (variation.image ?? '').toString()),
+      );
     }
-
+    images.removeWhere((url) => url.isEmpty);
     return images.toList();
   }
 
-  /// Show Image Popup
-  void showEnlargeImage(String image){
+  void updateSelectedImage(String imageUrl) {
+    selectedProductImage.value = imageUrl;
+  }
+
+  void showEnlargedImage(String image) {
     Get.to(
       fullscreenDialog: true,
-        () => Dialog.fullscreen(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: HkSizes.defaultSpace * 2, horizontal: HkSizes.defaultSpace),
-                child: CachedNetworkImage(imageUrl: image)
-              ),
-              const SizedBox(height: HkSizes.spaceBtwSections,),
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: SizedBox(
-                  width: 150,
-                  child: OutlinedButton(onPressed: () => Get.back(), child: const Text('Close')),
+          () => Dialog.fullscreen(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                  vertical: HkSizes.defaultSpace * 2,
+                  horizontal: HkSizes.defaultSpace),
+              child: image.isNotEmpty
+                  ? CachedNetworkImage(
+                imageUrl: image,
+                fit: BoxFit.contain,
+                placeholder: (context, url) => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+                errorWidget: (context, url, error) => const Icon(
+                  Icons.error_outline,
+                  size: 40,
+                  color: Colors.red,
                 ),
               )
-            ],
-          ),
-        )
+                  : const Icon(Icons.image_not_supported, size: 40),
+            ),
+            const SizedBox(height: HkSizes.spaceBtwSections),
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: SizedBox(
+                width: 150,
+                child: OutlinedButton(
+                    onPressed: () => Get.back(),
+                    child: const Text('Close')),
+              ),
+            )
+          ],
+        ),
+      ),
     );
   }
 }
